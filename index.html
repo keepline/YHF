@@ -1,10 +1,18 @@
+<!-- 
+  ========================================
+  PROJECT: RENOVATION LOG SYSTEM
+  VERSION: v4.1 (Cloud Sync Edition)
+  DATE: 2025-05-20
+  AUTHOR: AI ASSISTANT
+  ========================================
+-->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>RENOVATION CLOUD SYNC</title>
+    <title>RENOVATION LOG v4.1</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +20,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
     <style>
-        /* 保持原有酷炫样式，新增同步状态样式 */
         :root {
             --bg-color: #1a1a1a; --sidebar-bg: #141414; --border-color: #333;
             --highlight: #e0e0e0; --text-title: #fff; --text-body: #9e9e9e;
@@ -25,7 +32,11 @@
         .grid-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(var(--border-color) 1px, transparent 1px), linear-gradient(90deg, var(--border-color) 1px, transparent 1px); background-size: 80px 80px; opacity: 0.05; pointer-events: none; z-index: 0; }
 
         header { height: 60px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: var(--sidebar-bg); z-index: 20; padding-top: var(--safe-top); height: calc(60px + var(--safe-top)); }
+        
+        /* 品牌与版本号样式 */
         .brand { font-family: var(--font-mono); font-size: 12px; color: var(--text-title); display: flex; align-items: center; gap: 8px; }
+        .version-tag { font-size: 10px; color: #555; border: 1px solid #333; padding: 1px 5px; border-radius: 4px; margin-left: 5px; }
+
         .sync-status { font-size: 10px; font-family: var(--font-mono); color: #666; display: flex; align-items: center; gap: 5px; cursor: pointer; border: 1px solid #333; padding: 4px 8px; border-radius: 4px; transition: 0.3s; }
         .sync-status:hover { border-color: var(--highlight); color: var(--highlight); }
         .sync-dot { width: 6px; height: 6px; background: #666; border-radius: 50%; }
@@ -39,7 +50,6 @@
 
         .content-area { position: relative; padding: 40px 60px; overflow-y: auto; background: linear-gradient(135deg, rgba(31,31,31,0.5), rgba(26,26,26,0.8)); }
         
-        /* 采购清单样式 */
         .procurement-card { display: none; max-width: 800px; padding-bottom: 100px; }
         .procurement-card.active { display: block; animation: fadeUp 0.5s ease forwards; }
         @keyframes fadeUp { from {opacity:0; transform:translateY(15px);} to {opacity:1; transform:translateY(0);} }
@@ -53,7 +63,6 @@
         .item-price { color: var(--highlight); font-family: var(--font-mono); text-align: right; }
         .btn-del { border: none; background: none; color: #555; cursor: pointer; font-size: 18px; }
 
-        /* 配置弹窗 */
         .config-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .config-box { background: #1a1a1a; border: 1px solid #444; padding: 30px; width: 90%; max-width: 400px; border-radius: 10px; }
         .config-title { color: #fff; margin-bottom: 20px; font-size: 16px; font-family: var(--font-mono); }
@@ -70,7 +79,7 @@
             .input-group { grid-template-columns: 1fr 1fr; }
             .input-id { grid-column: 1 / 2; } .input-price { grid-column: 2 / 3; } .input-title { grid-column: 1 / -1; } .input-date { grid-column: 1 / 2; } .btn-add { grid-column: 2 / 3; }
             .list-item { grid-template-columns: 20px 1fr auto; grid-template-areas: "drag title price" "drag id date"; gap: 5px; }
-            .drag-handle { grid-area: drag; } .item-title { grid-area: title; color: #fff; } .item-price { grid-area: price; font-size: 16px; } .item-id { grid-area: id; font-size: 12px; color: #666; } .item-date { grid-area: date; font-size: 12px; text-align: right; } .btn-del { display: none; } /* 手机左滑删除太复杂，暂隐藏 */
+            .drag-handle { grid-area: drag; } .item-title { grid-area: title; color: #fff; } .item-price { grid-area: price; font-size: 16px; } .item-id { grid-area: id; font-size: 12px; color: #666; } .item-date { grid-area: date; font-size: 12px; text-align: right; } .btn-del { display: none; }
         }
     </style>
 </head>
@@ -79,8 +88,12 @@
     <div class="grid-bg"></div>
 
     <header>
-        <div class="brand"><span>●</span> CONSTRUCTION LOG</div>
-        <!-- 同步状态按钮 -->
+        <div class="brand">
+            <span>●</span> LOG
+            <!-- 版本号显示位置 -->
+            <span class="version-tag" id="versionDisplay">v4.1</span>
+        </div>
+        
         <div class="sync-status" onclick="openConfig()">
             <div class="sync-dot" id="syncDot"></div>
             <span id="syncText">Setup Sync</span>
@@ -89,22 +102,21 @@
 
     <div class="main-container">
         <nav class="sidebar">
-            <!-- 导航按钮... -->
             <button class="nav-btn active" onclick="switchTab(0)">01 进度概览</button>
             <button class="nav-btn" onclick="switchTab(1)" style="color: var(--highlight)">+ 采购清单</button>
         </nav>
 
         <main class="content-area">
-            <!-- 简单进度页面占位 -->
             <div id="page-overview" class="procurement-card active">
                 <h1>PROJECT OVERVIEW</h1>
                 <h2 style="color:#666">Renovation Progress</h2>
                 <div style="font-size: 14px; color: #888; line-height: 1.8;">
-                    此处显示您之前的装修进度卡片。<br>点击下方“采购清单”进行记账。
+                    此处显示您之前的装修进度卡片。<br>
+                    当前版本：<span style="color:#fff; font-family:var(--font-mono);">v4.1</span><br>
+                    点击下方“采购清单”进行记账与云同步。
                 </div>
             </div>
 
-            <!-- 采购清单页面 -->
             <div id="page-procurement" class="procurement-card">
                 <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:10px;">
                     <h1>PROCUREMENT</h1>
@@ -131,134 +143,99 @@
     <div class="config-modal" id="configModal">
         <div class="config-box">
             <div class="config-title">GITHUB CLOUD SYNC</div>
-            <div class="config-tip">请输入您的 GitHub 信息以开启多端同步。<br>Token 仅保存在本地缓存，安全放心。</div>
-            
-            <input id="cfgUser" class="config-input" placeholder="GitHub Username (e.g. yourname)">
-            <input id="cfgRepo" class="config-input" placeholder="Repository Name (e.g. renovation)">
-            <input id="cfgToken" class="config-input" type="password" placeholder="Personal Access Token (ghp_...)">
-            
+            <div class="config-tip">请输入 GitHub 信息开启同步 (Token 仅本地存储)。</div>
+            <input id="cfgUser" class="config-input" placeholder="GitHub Username">
+            <input id="cfgRepo" class="config-input" placeholder="Repository Name">
+            <input id="cfgToken" class="config-input" type="password" placeholder="Token (ghp_...)">
             <button class="btn-save" onclick="saveConfig()">CONNECT & SYNC</button>
             <button style="width:100%; background:none; border:none; color:#666; margin-top:10px; cursor:pointer;" onclick="closeConfig()">CLOSE</button>
         </div>
     </div>
 
     <script>
-        // --- 全局变量 ---
+        // 定义当前版本号
+        const APP_VERSION = 'v4.1';
+        console.log(`System Loaded: ${APP_VERSION}`); // 控制台打印版本
+
         let items = [];
         let githubConfig = JSON.parse(localStorage.getItem('gh_config')) || null;
-        let fileSha = null; // GitHub 文件指纹，用于更新
+        let fileSha = null;
         
-        // --- 初始化 ---
         document.addEventListener('DOMContentLoaded', () => {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('inDate').value = today;
             
+            // 确保UI显示正确版本
+            document.getElementById('versionDisplay').innerText = APP_VERSION;
+
             if (githubConfig) {
                 checkSync();
             } else {
-                // 没有配置，尝试读取本地临时数据
                 items = JSON.parse(localStorage.getItem('local_items')) || [];
                 renderList();
             }
         });
 
-        // --- 核心同步逻辑 ---
         async function checkSync() {
             const dot = document.getElementById('syncDot');
             const text = document.getElementById('syncText');
-            dot.className = 'sync-dot'; // reset
+            dot.className = 'sync-dot';
             text.innerText = 'Syncing...';
 
             try {
-                // 1. 从 GitHub 下载 data.json
                 const url = `https://api.github.com/repos/${githubConfig.user}/${githubConfig.repo}/contents/data.json`;
-                const res = await fetch(url, {
-                    headers: { 'Authorization': `token ${githubConfig.token}` }
-                });
-
+                const res = await fetch(url, { headers: { 'Authorization': `token ${githubConfig.token}` } });
+                
                 if (res.status === 404) {
-                    alert('找不到 data.json，请确认您在仓库里创建了这个文件！');
-                    text.innerText = 'File Error';
-                    dot.className = 'sync-dot error';
-                    return;
+                    alert('请先在GitHub仓库创建 data.json 文件！');
+                    text.innerText = 'File Error'; dot.className = 'sync-dot error'; return;
                 }
 
                 const data = await res.json();
-                fileSha = data.sha; // 记下SHA，下次更新要用
-                
-                // 2. 解码 Base64 (支持中文)
+                fileSha = data.sha;
                 const content = decodeURIComponent(escape(window.atob(data.content)));
                 items = JSON.parse(content);
-                
-                // 3. 渲染
                 renderList();
-                text.innerText = 'Connected';
-                dot.className = 'sync-dot active';
-                localStorage.setItem('local_items', JSON.stringify(items)); // 备份到本地
+                text.innerText = 'Connected'; dot.className = 'sync-dot active';
+                localStorage.setItem('local_items', JSON.stringify(items));
 
             } catch (err) {
                 console.error(err);
-                text.innerText = 'Auth Error';
-                dot.className = 'sync-dot error';
+                text.innerText = 'Auth Error'; dot.className = 'sync-dot error';
             }
         }
 
         async function pushToGithub() {
-            if (!githubConfig) {
-                // 没配置GitHub，只存本地
-                localStorage.setItem('local_items', JSON.stringify(items));
-                return;
-            }
-
-            const dot = document.getElementById('syncDot');
-            const text = document.getElementById('syncText');
-            text.innerText = 'Saving...';
-            dot.className = 'sync-dot';
+            if (!githubConfig) { localStorage.setItem('local_items', JSON.stringify(items)); return; }
+            const dot = document.getElementById('syncDot'); const text = document.getElementById('syncText');
+            text.innerText = 'Saving...'; dot.className = 'sync-dot';
 
             try {
-                // 1. 编码 Base64 (支持中文)
                 const content = window.btoa(unescape(encodeURIComponent(JSON.stringify(items, null, 2))));
-                
-                // 2. PUT 请求更新文件
                 const url = `https://api.github.com/repos/${githubConfig.user}/${githubConfig.repo}/contents/data.json`;
-                const body = {
-                    message: "Update procurement list from web",
-                    content: content,
-                    sha: fileSha // 必须带上上次下载时的 SHA
-                };
+                const body = { message: `Update from web ${APP_VERSION}`, content: content, sha: fileSha };
 
                 const res = await fetch(url, {
                     method: 'PUT',
-                    headers: { 
-                        'Authorization': `token ${githubConfig.token}`,
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Authorization': `token ${githubConfig.token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
 
                 const data = await res.json();
-                fileSha = data.content.sha; // 更新 SHA
-                
-                text.innerText = 'Saved';
-                dot.className = 'sync-dot active';
-
+                fileSha = data.content.sha;
+                text.innerText = 'Saved'; dot.className = 'sync-dot active';
             } catch (err) {
                 console.error(err);
-                text.innerText = 'Save Failed';
-                dot.className = 'sync-dot error';
+                text.innerText = 'Save Failed'; dot.className = 'sync-dot error';
             }
         }
 
-        // --- 界面操作逻辑 ---
         function renderList() {
-            const list = document.getElementById('listContainer');
-            list.innerHTML = '';
+            const list = document.getElementById('listContainer'); list.innerHTML = '';
             let total = 0;
-            
             items.forEach((item, idx) => {
                 total += Number(item.price);
-                const el = document.createElement('div');
-                el.className = 'list-item';
+                const el = document.createElement('div'); el.className = 'list-item';
                 el.innerHTML = `
                     <div class="drag-handle">::</div>
                     <div style="color:#666; font-family:var(--font-mono)">${item.id}</div>
@@ -277,72 +254,31 @@
             const title = document.getElementById('inTitle').value;
             const price = document.getElementById('inPrice').value;
             const date = document.getElementById('inDate').value;
-            
             if(!title || !price) return alert('Input Required');
-            
             items.push({ id, title, price, date });
-            renderList();
-            pushToGithub(); // 自动保存上云
-            
-            // 清空
-            document.getElementById('inId').value = '';
-            document.getElementById('inTitle').value = '';
-            document.getElementById('inPrice').value = '';
+            renderList(); pushToGithub();
+            document.getElementById('inId').value = ''; document.getElementById('inTitle').value = ''; document.getElementById('inPrice').value = '';
         }
 
-        function delItem(idx) {
-            if(confirm('Delete?')) {
-                items.splice(idx, 1);
-                renderList();
-                pushToGithub();
-            }
-        }
+        function delItem(idx) { if(confirm('Delete?')) { items.splice(idx, 1); renderList(); pushToGithub(); } }
 
-        // 拖拽排序
-        new Sortable(document.getElementById('listContainer'), {
-            handle: '.drag-handle',
-            animation: 150,
-            onEnd: function (evt) {
-                const item = items.splice(evt.oldIndex, 1)[0];
-                items.splice(evt.newIndex, 0, item);
-                pushToGithub(); // 排序后也要保存
-            },
-        });
+        new Sortable(document.getElementById('listContainer'), { handle: '.drag-handle', animation: 150, onEnd: function (evt) { const item = items.splice(evt.oldIndex, 1)[0]; items.splice(evt.newIndex, 0, item); pushToGithub(); } });
 
-        // --- 配置弹窗逻辑 ---
-        function openConfig() {
-            document.getElementById('configModal').style.display = 'flex';
-            if(githubConfig) {
-                document.getElementById('cfgUser').value = githubConfig.user;
-                document.getElementById('cfgRepo').value = githubConfig.repo;
-                document.getElementById('cfgToken').value = githubConfig.token;
-            }
-        }
+        function openConfig() { document.getElementById('configModal').style.display = 'flex'; if(githubConfig) { document.getElementById('cfgUser').value = githubConfig.user; document.getElementById('cfgRepo').value = githubConfig.repo; document.getElementById('cfgToken').value = githubConfig.token; } }
         function closeConfig() { document.getElementById('configModal').style.display = 'none'; }
-        
         function saveConfig() {
-            const user = document.getElementById('cfgUser').value;
-            const repo = document.getElementById('cfgRepo').value;
-            const token = document.getElementById('cfgToken').value;
-            
+            const user = document.getElementById('cfgUser').value; const repo = document.getElementById('cfgRepo').value; const token = document.getElementById('cfgToken').value;
             if(!user || !repo || !token) return alert('All fields required');
-            
-            githubConfig = { user, repo, token };
-            localStorage.setItem('gh_config', JSON.stringify(githubConfig));
-            
-            closeConfig();
-            checkSync(); // 立即测试连接
+            githubConfig = { user, repo, token }; localStorage.setItem('gh_config', JSON.stringify(githubConfig));
+            closeConfig(); checkSync();
         }
 
-        // 页面切换
         function switchTab(idx) {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.nav-btn')[idx].classList.add('active');
-            
             document.getElementById('page-overview').className = idx === 0 ? 'procurement-card active' : 'procurement-card';
             document.getElementById('page-procurement').className = idx === 1 ? 'procurement-card active' : 'procurement-card';
         }
-
     </script>
 </body>
 </html>
