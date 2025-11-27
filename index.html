@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 关键：针对移动端的视口设置，禁止缩放，适配刘海屏 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>RENOVATION SCHEDULE | MOBILE & PC</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --sidebar-bg: #141414;
+            --border-color: #333333;
+            --highlight: #e0e0e0; 
+            --text-title: #ffffff;
+            --text-body: #9e9e9e;
+            --text-muted: #555555;
+            --font-main: 'Noto Sans SC', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-body);
+            font-family: var(--font-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- 建筑网格背景 --- */
+        .grid-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(var(--border-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+            background-size: 80px 80px;
+            opacity: 0.05; pointer-events: none; z-index: 0;
+        }
+
+        /* --- 顶部 Header --- */
+        header {
+            height: 60px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 30px;
+            background: var(--sidebar-bg);
+            z-index: 20;
+            padding-top: var(--safe-top); /* 适配iPhone刘海 */
+            height: calc(60px + var(--safe-top));
+        }
+        .brand { font-family: var(--font-mono); font-size: 12px; color: var(--text-title); letter-spacing: 1px; display: flex; align-items: center; gap: 8px;}
+        .brand-dot { width: 6px; height: 6px; background: var(--highlight); border-radius: 50%; }
+
+        /* --- 主容器布局 --- */
+        .main-container {
+            display: grid;
+            grid-template-columns: 260px 1fr; /* PC默认布局 */
+            flex: 1;
+            height: calc(100vh - 60px - var(--safe-top));
+            position: relative; z-index: 1;
+        }
+
+        /* --- 侧边/顶部导航 --- */
+        .sidebar {
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex; flex-direction: column;
+            overflow-y: auto;
+            padding-top: 20px;
+        }
+        
+        .nav-btn {
+            background: transparent; border: none;
+            padding: 18px 30px;
+            text-align: left; color: var(--text-muted);
+            font-size: 14px; font-family: var(--font-main);
+            cursor: pointer; transition: all 0.3s;
+            border-left: 2px solid transparent;
+        }
+        .nav-btn.active { background: #222; color: var(--text-title); border-left-color: var(--highlight); font-weight: 500; }
+
+        /* --- 内容区 --- */
+        .content-area {
+            position: relative;
+            padding: 50px 80px;
+            overflow-y: auto;
+            background: linear-gradient(135deg, rgba(31,31,31,0.5) 0%, rgba(26,26,26,0.8) 100%);
+            padding-bottom: 100px;
+        }
+
+        /* --- 进度条 --- */
+        .progress-module {
+            position: absolute; top: 40px; right: 60px;
+            text-align: right;
+            border-left: 1px solid var(--border-color);
+            padding-left: 20px;
+        }
+        .progress-num { font-size: 60px; font-family: var(--font-mono); color: var(--highlight); line-height: 1; font-weight: 300;}
+        .progress-bar-wrap { width: 100%; height: 3px; background: #333; margin-top: 10px; }
+        .progress-bar-fill { height: 100%; background: var(--highlight); width: 0%; transition: width 0.5s; }
+
+        /* --- 详情卡片 --- */
+        .detail-card { display: none; animation: fadeUp 0.5s ease forwards; max-width: 800px; }
+        .detail-card.active { display: block; }
+        @keyframes fadeUp { from {opacity:0; transform:translateY(15px);} to {opacity:1; transform:translateY(0);} }
+
+        .phase-tag { font-family: var(--font-mono); font-size: 11px; color: var(--highlight); border: 1px solid #444; padding: 4px 10px; display: inline-block; margin-bottom: 15px; }
+        h1 { font-size: 32px; color: var(--text-title); margin-bottom: 5px; font-weight: 400; letter-spacing: -1px; }
+        h2 { font-size: 13px; color: var(--text-muted); margin-bottom: 40px; font-family: var(--font-mono); text-transform: uppercase; }
+
+        .info-box { margin-bottom: 30px; padding-left: 15px; border-left: 1px solid var(--border-color); }
+        .info-label { font-size: 10px; color: #666; font-family: var(--font-mono); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px;}
+        .info-content { font-size: 15px; line-height: 1.7; color: var(--text-body); text-align: justify; }
+        .info-content strong { color: #fff; font-weight: 500; }
+
+        /* --- 手机端适配 (Media Queries) --- */
+        @media (max-width: 768px) {
+            /* 布局变为上下结构 */
+            .main-container { 
+                grid-template-columns: 1fr; 
+                grid-template-rows: auto 1fr;
+            }
+
+            header { padding: 0 20px; padding-top: var(--safe-top); justify-content: center; }
+            .header-info { display: none; } /* 手机上隐藏次要信息 */
+
+            /* 导航变为顶部横向滚动条 */
+            .sidebar {
+                flex-direction: row;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding: 0;
+                height: 54px;
+                white-space: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch; /* 丝滑滚动 */
+                background: rgba(20,20,20,0.95);
+            }
+            /* 隐藏滚动条 */
+            .sidebar::-webkit-scrollbar { display: none; }
+            
+            .nav-btn {
+                padding: 0 20px;
+                line-height: 54px;
+                font-size: 14px;
+                border-left: none;
+                border-bottom: 2px solid transparent;
+                flex-shrink: 0;
+            }
+            .nav-btn.active {
+                background: transparent;
+                border-left: none;
+                border-bottom-color: var(--highlight);
+            }
+
+            /* 内容区适配 */
+            .content-area { padding: 30px 20px; padding-bottom: 120px; } /* 底部留出HUD空间 */
+
+            /* 进度条移到顶部或者缩小 */
+            .progress-module {
+                position: relative; top: 0; right: 0;
+                border: none; padding: 0; text-align: left;
+                margin-bottom: 30px;
+                display: flex; align-items: baseline; gap: 15px;
+            }
+            .progress-num { font-size: 42px; }
+            .progress-bar-wrap { display: none; } /* 手机上隐藏条，只显示数字，更简洁 */
+
+            h1 { font-size: 26px; }
+            .info-content { font-size: 15px; }
+            
+            /* 调整网格大小适配小屏 */
+            .grid-bg { background-size: 40px 40px; }
+        }
+
+        /* --- HUD (色轮) --- */
+        .hud-wrapper { position: fixed; bottom: 30px; right: 30px; z-index: 100; }
+        @media (max-width: 768px) { .hud-wrapper { bottom: calc(20px + var(--safe-bottom)); right: 20px; } }
+        
+        .hud-btn {
+            width: 44px; height: 44px; background: rgba(30,30,30,0.9); border: 1px solid #555; border-radius: 50%;
+            color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer;
+            backdrop-filter: blur(10px); box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        }
+        .hud-panel {
+            position: absolute; bottom: 60px; right: 0;
+            background: rgba(20,20,20,0.95); border: 1px solid #444; border-radius: 10px;
+            padding: 15px; width: 160px; display: none; flex-direction: column; gap: 12px;
+            backdrop-filter: blur(15px);
+        }
+        .hud-panel.show { display: flex; animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popUp { from{transform: scale(0.8); opacity: 0;} to{transform: scale(1); opacity: 1;} }
+
+    </style>
+</head>
+<body>
+
+    <div class="grid-bg"></div>
+
+    <header>
+        <div class="brand">
+            <div class="brand-dot"></div>
+            <span>CONSTRUCTION LOG</span>
+        </div>
+        <div class="header-info" style="font-size: 10px; color: #555; font-family: var(--font-mono);">DUPLEX 2025</div>
+    </header>
+
+    <div class="main-container">
+        <!-- 侧边/顶部导航 -->
+        <nav class="sidebar">
+            <button class="nav-btn active" onclick="showPhase(0)">01 保护</button>
+            <button class="nav-btn" onclick="showPhase(1)">02 木工</button>
+            <button class="nav-btn" onclick="showPhase(2)">03 石材</button>
+            <button class="nav-btn" onclick="showPhase(3)">04 油工</button>
+            <button class="nav-btn" onclick="showPhase(4)">05 地板</button>
+            <button class="nav-btn" onclick="showPhase(5)">06 交付</button>
+        </nav>
+
+        <main class="content-area">
+            <div class="progress-module">
+                <span style="font-family: var(--font-mono); font-size: 10px; color: #666; text-transform: uppercase;">Total Progress</span>
+                <div class="progress-num" id="progressText">0%</div>
+                <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar"></div></div>
+            </div>
+            <div id="content-container"></div>
+        </main>
+    </div>
+
+    <!-- 颜色控制 -->
+    <div class="hud-wrapper">
+        <div class="hud-panel" id="hudPanel">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:10px; color:#888; font-family:var(--font-mono);">HIGHLIGHT</span>
+                <input type="color" value="#e0e0e0" oninput="updateColor('--highlight', this.value)" style="width:20px; height:20px; border:none; padding:0; background:none;">
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:10px; color:#888; font-family:var(--font-mono);">TITLE</span>
+                <input type="color" value="#ffffff" oninput="updateColor('--text-title', this.value)" style="width:20px; height:20px; border:none; padding:0; background:none;">
+            </div>
+        </div>
+        <button class="hud-btn" onclick="toggleHud()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/></svg>
+        </button>
+    </div>
+
+    <script>
+        const phases = [
+            { id: "01", title: "封闭与保护", subtitle: "Protection & Enclosure", progress: 15, core: "二楼玻璃门安装 / 全屋瓷砖保护", details: "当前紧急任务。1. 必须在木工大规模进场前完成二楼西/北向玻璃门安装。 2. 购买地面保护膜，对一二楼瓷砖（特别是地台和楼梯第一步）进行无死角覆盖。", warning: "严禁在未保护的瓷砖上移动梯子或堆放欧松板。" },
+            { id: "02", title: "木工与基层", subtitle: "Woodwork & Substrate", progress: 30, core: "灯孔开槽 / 楼梯欧松板 / 卫浴阴影缝", details: "木工需完成吊顶灯孔开槽。楼梯第二步起用欧松板打底调平，预留石材厚度。卫生间吊顶需确认阴影缝收口方式并预埋基层（提前买好样砖比对）。", warning: "隐形踢脚线区域需确认墙底平整度，确保只有2cm悬浮。" },
+            { id: "03", title: "石材与露台", subtitle: "Stone & Terrace", progress: 45, core: "露台施工 / 楼梯石材踏步安装", details: "露台施工可并行。建议在艺术漆面层前安装楼梯石材，方便油工修补石材与墙体缝隙。", warning: "石材搬运极易磕碰墙面，需专人看护；装完立即保护。" },
+            { id: "04", title: "油工与复尺", subtitle: "Paint & Measure", progress: 60, core: "墙面找平 / 全屋定制复尺 / 艺术漆", details: "油工腻子干透找平后，立刻通知定制复尺下单（省30天工期）。最后进行艺术漆施工。", warning: "艺术漆施工期间，严禁木工产生粉尘。" },
+            { id: "05", title: "地板与收口", subtitle: "Flooring & Doors", progress: 80, core: "卧室木地板 / 隐形踢脚线收口", details: "艺术漆干透后铺地板。精确处理地板与墙面隐形槽口的收口（预留5-8mm）。随后装门。", warning: "测算地垫宝厚度，防止地板过高堵死踢脚线槽口。" },
+            { id: "06", title: "安装与交付", subtitle: "Final Assembly", progress: 95, core: "定制柜体 / 开关灯具 / 补漆", details: "柜体进场安装。电工装面板灯具，水暖装马桶花洒。油工返场修补磕碰。", warning: "装柜子时务必在地板上铺纸壳保护。" }
+        ];
+
+        const container = document.getElementById('content-container');
+        const progressText = document.getElementById('progressText');
+        const progressBar = document.getElementById('progressBar');
+        const navBtns = document.querySelectorAll('.nav-btn');
+
+        function render() {
+            phases.forEach((p, i) => {
+                const div = document.createElement('div');
+                div.className = `detail-card ${i===0?'active':''}`;
+                div.id = `p-${i}`;
+                div.innerHTML = `
+                    <span class="phase-tag">PHASE ${p.id}</span>
+                    <h1>${p.title}</h1>
+                    <h2>${p.subtitle}</h2>
+                    <div class="info-box">
+                        <div class="info-label">Core Mission</div>
+                        <div class="info-content"><strong>${p.core}</strong></div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label">Details</div>
+                        <div class="info-content">${p.details}</div>
+                    </div>
+                    <div class="info-box" style="border-left-color: var(--highlight);">
+                        <div class="info-label" style="color:var(--highlight)">WARNING</div>
+                        <div class="info-content" style="color:#ddd">${p.warning}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            updateProgress(phases[0].progress);
+        }
+
+        window.showPhase = (i) => {
+            navBtns.forEach(b => b.classList.remove('active'));
+            navBtns[i].classList.add('active');
+            document.querySelectorAll('.detail-card').forEach(c => c.classList.remove('active'));
+            document.getElementById(`p-${i}`).classList.add('active');
+            updateProgress(phases[i].progress);
+        }
+
+        function updateProgress(val) {
+            progressBar.style.width = val + '%';
+            progressText.innerText = val + '%';
+        }
+
+        window.toggleHud = () => document.getElementById('hudPanel').classList.toggle('show');
+        window.updateColor = (v, val) => document.documentElement.style.setProperty(v, val);
+
+        render();
+    </script>
+</body>
+</html>
