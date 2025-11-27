@@ -1,9 +1,8 @@
 <!-- 
   ========================================
   PROJECT: RENOVATION LOG SYSTEM
-  VERSION: v4.1 (Cloud Sync Edition)
-  DATE: 2025-05-20
-  AUTHOR: AI ASSISTANT
+  VERSION: v4.2 (Fixed Overview + Cloud Sync)
+  DATE: 2025
   ========================================
 -->
 <!DOCTYPE html>
@@ -12,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>RENOVATION LOG v4.1</title>
+    <title>RENOVATION LOG v4.2</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,7 +32,6 @@
 
         header { height: 60px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: var(--sidebar-bg); z-index: 20; padding-top: var(--safe-top); height: calc(60px + var(--safe-top)); }
         
-        /* 品牌与版本号样式 */
         .brand { font-family: var(--font-mono); font-size: 12px; color: var(--text-title); display: flex; align-items: center; gap: 8px; }
         .version-tag { font-size: 10px; color: #555; border: 1px solid #333; padding: 1px 5px; border-radius: 4px; margin-left: 5px; }
 
@@ -50,25 +48,36 @@
 
         .content-area { position: relative; padding: 40px 60px; overflow-y: auto; background: linear-gradient(135deg, rgba(31,31,31,0.5), rgba(26,26,26,0.8)); }
         
-        .procurement-card { display: none; max-width: 800px; padding-bottom: 100px; }
-        .procurement-card.active { display: block; animation: fadeUp 0.5s ease forwards; }
+        /* 页面切换逻辑 */
+        .page-section { display: none; max-width: 800px; padding-bottom: 100px; width: 100%; }
+        .page-section.active { display: block; animation: fadeUp 0.5s ease forwards; }
         @keyframes fadeUp { from {opacity:0; transform:translateY(15px);} to {opacity:1; transform:translateY(0);} }
 
+        /* 装修进度卡片样式 */
+        .phase-card { margin-bottom: 40px; padding-bottom: 30px; border-bottom: 1px solid #333; }
+        .phase-tag { font-family: var(--font-mono); font-size: 11px; color: var(--highlight); border: 1px solid #444; padding: 4px 10px; display: inline-block; margin-bottom: 15px; }
+        h1 { font-size: 28px; color: var(--text-title); margin-bottom: 5px; font-weight: 400; letter-spacing: -1px; }
+        h2 { font-size: 13px; color: #666; margin-bottom: 25px; font-family: var(--font-mono); text-transform: uppercase; }
+        .info-box { margin-bottom: 20px; padding-left: 15px; border-left: 1px solid var(--border-color); }
+        .info-label { font-size: 10px; color: #666; font-family: var(--font-mono); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px;}
+        .info-content { font-size: 15px; line-height: 1.7; color: var(--text-body); text-align: justify; }
+        .info-content strong { color: #fff; font-weight: 500; }
+
+        /* 采购清单样式 */
         .input-group { display: grid; grid-template-columns: 60px 2fr 1fr 100px auto; gap: 10px; background: #222; padding: 15px; margin-bottom: 20px; border: 1px solid #333; }
         .form-input { background: #111; border: 1px solid #333; color: #fff; padding: 10px; font-family: var(--font-mono); width: 100%; }
         .btn-add { background: var(--highlight); border: none; padding: 0 20px; font-weight: bold; cursor: pointer; }
-
         .list-item { display: grid; grid-template-columns: 30px 60px 2fr 1fr 100px 30px; gap: 10px; padding: 15px; border-bottom: 1px solid #222; align-items: center; font-size: 14px; background: rgba(255,255,255,0.02); }
         .drag-handle { cursor: grab; color: #444; }
         .item-price { color: var(--highlight); font-family: var(--font-mono); text-align: right; }
         .btn-del { border: none; background: none; color: #555; cursor: pointer; font-size: 18px; }
 
+        /* 配置弹窗 */
         .config-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .config-box { background: #1a1a1a; border: 1px solid #444; padding: 30px; width: 90%; max-width: 400px; border-radius: 10px; }
         .config-title { color: #fff; margin-bottom: 20px; font-size: 16px; font-family: var(--font-mono); }
         .config-input { width: 100%; background: #111; border: 1px solid #333; color: #fff; padding: 12px; margin-bottom: 15px; font-family: var(--font-mono); font-size: 12px; }
         .btn-save { width: 100%; background: var(--highlight); border: none; padding: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .config-tip { font-size: 10px; color: #666; line-height: 1.5; margin-bottom: 10px; }
 
         @media (max-width: 768px) {
             .main-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
@@ -90,10 +99,8 @@
     <header>
         <div class="brand">
             <span>●</span> LOG
-            <!-- 版本号显示位置 -->
-            <span class="version-tag" id="versionDisplay">v4.1</span>
+            <span class="version-tag" id="versionDisplay">v4.2</span>
         </div>
-        
         <div class="sync-status" onclick="openConfig()">
             <div class="sync-dot" id="syncDot"></div>
             <span id="syncText">Setup Sync</span>
@@ -102,22 +109,25 @@
 
     <div class="main-container">
         <nav class="sidebar">
-            <button class="nav-btn active" onclick="switchTab(0)">01 进度概览</button>
+            <button class="nav-btn active" onclick="switchTab(0)">01 装修进度</button>
             <button class="nav-btn" onclick="switchTab(1)" style="color: var(--highlight)">+ 采购清单</button>
         </nav>
 
         <main class="content-area">
-            <div id="page-overview" class="procurement-card active">
-                <h1>PROJECT OVERVIEW</h1>
-                <h2 style="color:#666">Renovation Progress</h2>
-                <div style="font-size: 14px; color: #888; line-height: 1.8;">
-                    此处显示您之前的装修进度卡片。<br>
-                    当前版本：<span style="color:#fff; font-family:var(--font-mono);">v4.1</span><br>
-                    点击下方“采购清单”进行记账与云同步。
+            
+            <!-- 1. 装修进度页面 (修复回归) -->
+            <div id="page-overview" class="page-section active">
+                <div style="margin-bottom: 40px; border-bottom: 1px solid #333; padding-bottom: 20px;">
+                     <h1>RENOVATION TIMELINE</h1>
+                     <h2 style="margin-bottom:0">Construction Phases & Details</h2>
                 </div>
+                
+                <!-- 这里是动态生成的装修卡片容器 -->
+                <div id="phases-container"></div>
             </div>
 
-            <div id="page-procurement" class="procurement-card">
+            <!-- 2. 采购清单页面 -->
+            <div id="page-procurement" class="page-section">
                 <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:10px;">
                     <h1>PROCUREMENT</h1>
                     <div style="text-align:right;">
@@ -143,7 +153,7 @@
     <div class="config-modal" id="configModal">
         <div class="config-box">
             <div class="config-title">GITHUB CLOUD SYNC</div>
-            <div class="config-tip">请输入 GitHub 信息开启同步 (Token 仅本地存储)。</div>
+            <div style="font-size:10px; color:#666; margin-bottom:10px;">Token is stored locally.</div>
             <input id="cfgUser" class="config-input" placeholder="GitHub Username">
             <input id="cfgRepo" class="config-input" placeholder="Repository Name">
             <input id="cfgToken" class="config-input" type="password" placeholder="Token (ghp_...)">
@@ -153,21 +163,31 @@
     </div>
 
     <script>
-        // 定义当前版本号
-        const APP_VERSION = 'v4.1';
-        console.log(`System Loaded: ${APP_VERSION}`); // 控制台打印版本
+        const APP_VERSION = 'v4.2';
+        console.log(`System Loaded: ${APP_VERSION}`);
 
-        let items = [];
+        // --- 数据定义 (修复：把装修进度数据加回来了) ---
+        const phasesData = [
+            { id: "01", title: "封闭与保护", subtitle: "Protection", core: "二楼玻璃门安装 / 全屋瓷砖保护", details: "当前紧急任务。1. 必须在木工大规模进场前完成二楼西/北向玻璃门安装。 2. 购买地面保护膜，对一二楼瓷砖（特别是地台和楼梯第一步）进行无死角覆盖。", warning: "严禁在未保护的瓷砖上移动梯子或堆放欧松板。" },
+            { id: "02", title: "木工与基层", subtitle: "Woodwork", core: "灯孔开槽 / 楼梯欧松板 / 卫浴阴影缝", details: "木工需完成吊顶灯孔开槽。楼梯第二步起用欧松板打底调平，预留石材厚度。卫生间吊顶需确认阴影缝收口方式并预埋基层。", warning: "隐形踢脚线区域需确认墙底平整度，确保只有2cm悬浮。" },
+            { id: "03", title: "石材与露台", subtitle: "Stone & Terrace", core: "露台施工 / 楼梯石材踏步安装", details: "露台施工可并行。建议在艺术漆面层前安装楼梯石材，方便油工修补石材与墙体缝隙。", warning: "石材搬运极易磕碰墙面，需专人看护；装完立即保护。" },
+            { id: "04", title: "油工与复尺", subtitle: "Paint & Measure", core: "墙面找平 / 全屋定制复尺 / 艺术漆", details: "油工腻子干透找平后，立刻通知定制复尺下单（省30天工期）。最后进行艺术漆施工。", warning: "艺术漆施工期间，严禁木工产生粉尘。" },
+            { id: "05", title: "地板与收口", subtitle: "Flooring", core: "卧室木地板 / 隐形踢脚线收口", details: "艺术漆干透后铺地板。精确处理地板与墙面隐形槽口的收口（预留5-8mm）。随后装门。", warning: "测算地垫宝厚度，防止地板过高堵死踢脚线槽口。" },
+            { id: "06", title: "安装与交付", subtitle: "Final Assembly", core: "定制柜体 / 开关灯具 / 补漆", details: "柜体进场安装。电工装面板灯具，水暖装马桶花洒。油工返场修补磕碰。", warning: "装柜子时务必在地板上铺纸壳保护。" }
+        ];
+
+        let items = []; // 采购清单数据
         let githubConfig = JSON.parse(localStorage.getItem('gh_config')) || null;
         let fileSha = null;
         
         document.addEventListener('DOMContentLoaded', () => {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('inDate').value = today;
-            
-            // 确保UI显示正确版本
             document.getElementById('versionDisplay').innerText = APP_VERSION;
+            document.getElementById('inDate').value = new Date().toISOString().split('T')[0];
 
+            // 1. 渲染装修进度卡片
+            renderPhases();
+
+            // 2. 初始化采购清单
             if (githubConfig) {
                 checkSync();
             } else {
@@ -176,21 +196,44 @@
             }
         });
 
+        // --- 渲染函数：装修进度 ---
+        function renderPhases() {
+            const container = document.getElementById('phases-container');
+            container.innerHTML = '';
+            phasesData.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'phase-card';
+                card.innerHTML = `
+                    <span class="phase-tag">PHASE ${p.id}</span>
+                    <h1>${p.title}</h1>
+                    <h2>${p.subtitle}</h2>
+                    <div class="info-box">
+                        <div class="info-label">Core Mission</div>
+                        <div class="info-content"><strong>${p.core}</strong></div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label">Details</div>
+                        <div class="info-content">${p.details}</div>
+                    </div>
+                    <div class="info-box" style="border-left-color:var(--highlight)">
+                        <div class="info-label" style="color:var(--highlight)">Warning</div>
+                        <div class="info-content">${p.warning}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- 云同步逻辑 ---
         async function checkSync() {
             const dot = document.getElementById('syncDot');
             const text = document.getElementById('syncText');
             dot.className = 'sync-dot';
             text.innerText = 'Syncing...';
-
             try {
                 const url = `https://api.github.com/repos/${githubConfig.user}/${githubConfig.repo}/contents/data.json`;
                 const res = await fetch(url, { headers: { 'Authorization': `token ${githubConfig.token}` } });
-                
-                if (res.status === 404) {
-                    alert('请先在GitHub仓库创建 data.json 文件！');
-                    text.innerText = 'File Error'; dot.className = 'sync-dot error'; return;
-                }
-
+                if (res.status === 404) { alert('GitHub Error: data.json not found'); text.innerText = 'File Error'; dot.className = 'sync-dot error'; return; }
                 const data = await res.json();
                 fileSha = data.sha;
                 const content = decodeURIComponent(escape(window.atob(data.content)));
@@ -198,7 +241,6 @@
                 renderList();
                 text.innerText = 'Connected'; dot.className = 'sync-dot active';
                 localStorage.setItem('local_items', JSON.stringify(items));
-
             } catch (err) {
                 console.error(err);
                 text.innerText = 'Auth Error'; dot.className = 'sync-dot error';
@@ -209,18 +251,15 @@
             if (!githubConfig) { localStorage.setItem('local_items', JSON.stringify(items)); return; }
             const dot = document.getElementById('syncDot'); const text = document.getElementById('syncText');
             text.innerText = 'Saving...'; dot.className = 'sync-dot';
-
             try {
                 const content = window.btoa(unescape(encodeURIComponent(JSON.stringify(items, null, 2))));
                 const url = `https://api.github.com/repos/${githubConfig.user}/${githubConfig.repo}/contents/data.json`;
                 const body = { message: `Update from web ${APP_VERSION}`, content: content, sha: fileSha };
-
                 const res = await fetch(url, {
                     method: 'PUT',
                     headers: { 'Authorization': `token ${githubConfig.token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
-
                 const data = await res.json();
                 fileSha = data.content.sha;
                 text.innerText = 'Saved'; dot.className = 'sync-dot active';
@@ -230,6 +269,7 @@
             }
         }
 
+        // --- 采购清单逻辑 ---
         function renderList() {
             const list = document.getElementById('listContainer'); list.innerHTML = '';
             let total = 0;
@@ -254,21 +294,20 @@
             const title = document.getElementById('inTitle').value;
             const price = document.getElementById('inPrice').value;
             const date = document.getElementById('inDate').value;
-            if(!title || !price) return alert('Input Required');
+            if(!title || !price) return alert('请输入名称和价格');
             items.push({ id, title, price, date });
             renderList(); pushToGithub();
             document.getElementById('inId').value = ''; document.getElementById('inTitle').value = ''; document.getElementById('inPrice').value = '';
         }
-
         function delItem(idx) { if(confirm('Delete?')) { items.splice(idx, 1); renderList(); pushToGithub(); } }
-
         new Sortable(document.getElementById('listContainer'), { handle: '.drag-handle', animation: 150, onEnd: function (evt) { const item = items.splice(evt.oldIndex, 1)[0]; items.splice(evt.newIndex, 0, item); pushToGithub(); } });
 
+        // --- UI 操作 ---
         function openConfig() { document.getElementById('configModal').style.display = 'flex'; if(githubConfig) { document.getElementById('cfgUser').value = githubConfig.user; document.getElementById('cfgRepo').value = githubConfig.repo; document.getElementById('cfgToken').value = githubConfig.token; } }
         function closeConfig() { document.getElementById('configModal').style.display = 'none'; }
         function saveConfig() {
             const user = document.getElementById('cfgUser').value; const repo = document.getElementById('cfgRepo').value; const token = document.getElementById('cfgToken').value;
-            if(!user || !repo || !token) return alert('All fields required');
+            if(!user || !repo || !token) return alert('请填入所有信息');
             githubConfig = { user, repo, token }; localStorage.setItem('gh_config', JSON.stringify(githubConfig));
             closeConfig(); checkSync();
         }
@@ -276,8 +315,9 @@
         function switchTab(idx) {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.nav-btn')[idx].classList.add('active');
-            document.getElementById('page-overview').className = idx === 0 ? 'procurement-card active' : 'procurement-card';
-            document.getElementById('page-procurement').className = idx === 1 ? 'procurement-card active' : 'procurement-card';
+            document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+            if(idx === 0) document.getElementById('page-overview').classList.add('active');
+            if(idx === 1) document.getElementById('page-procurement').classList.add('active');
         }
     </script>
 </body>
